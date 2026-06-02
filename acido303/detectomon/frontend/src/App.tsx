@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { generateCard, getCard, wsDetectUrl } from "./api";
+import { CardNotFoundError, generateCard, getCard, wsDetectUrl } from "./api";
 import SidePanel from "./components/SidePanel";
 import Viewer, { captureFrameCrop } from "./components/Viewer";
 import type { CardInfo, Detection, FrameResponse } from "./types";
@@ -37,6 +37,7 @@ export default function App() {
   const [sourceH, setSourceH] = useState(480);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cardInfo, setCardInfo] = useState<CardInfo | null>(null);
+  const [allCards, setAllCards] = useState<CardInfo[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [enabledClasses, setEnabledClasses] = useState<Set<string>>(
@@ -44,9 +45,16 @@ export default function App() {
   );
   const [confidence, setConfidence] = useState(0.45);
   const [processingMs, setProcessingMs] = useState<number | null>(null);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const [zoom, setZoom] = useState(0);
+  const [hwZoomCaps, setHwZoomCaps] = useState<{ min: number; max: number } | null>(null);
 
-  const selected =
-    detections.find((d) => d.id === selectedId) ?? null;
+  const lastSelectedRef = useRef<Detection | null>(null);
+  const selected = detections.find((d) => d.id === selectedId) ?? null;
+  // Keep the last visible state so the panel doesn't go blank when the object
+  // temporarily leaves the frame. Only truly clear when selectedId becomes null.
+  if (selected) lastSelectedRef.current = selected;
+  const displaySelected = selected ?? (selectedId ? lastSelectedRef.current : null);
 
   const mergeDetections = useCallback(
     (incoming: FrameResponse["detections"], sw: number, sh: number) => {
@@ -124,12 +132,47 @@ export default function App() {
     setRunning(false);
     setStatus("Stopped");
     setDetections([]);
+    setZoom(0);
+    setHwZoomCaps(null);
   }, []);
 
-  const start = useCallback(async () => {
+
+  const detectHwZoom = useCallback((stream: MediaStream) => {
+    const track = stream.getVideoTracks()[0];
+    if (!track) return;
+    const caps = track.getCapabilities() as MediaTrackCapabilities & {
+      zoom?: { min: number; max: number };
+    };
+    setHwZoomCaps(caps.zoom ?? null);
+    setZoom(0);
+  }, []);
+
+  // zoom is -10..+10; 0 = 1x. Scale = 2^(zoom/5): -10→0.25x, 0→1x, +10→4x
+  const zoomScale = Math.pow(2, zoom / 5);
+
+  const applyZoom = useCallback(async (value: number) => {
+    setZoom(value);
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || !hwZoomCaps) return;
+    // reset hw zoom when going neutral/negative; map 1..10 to hw range otherwise
+    const hwValue = value <= 0
+      ? hwZoomCaps.min
+      : hwZoomCaps.min + ((value - 1) / 9) * (hwZoomCaps.max - hwZoomCaps.min);
+    try {
+      await track.applyConstraints({ advanced: [{ zoom: hwValue } as MediaTrackConstraintSet] });
+    } catch {
+      // hw zoom failed — CSS transform fallback via state is already applied
+    }
+  }, [hwZoomCaps]);
+
+  const switchCamera = useCallback(async () => {
+    const nextMode = facingMode === "environment" ? "user" : "environment";
+
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { facingMode: nextMode, width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false,
       });
       streamRef.current = stream;
@@ -138,6 +181,37 @@ export default function App() {
         video.srcObject = stream;
         await video.play();
       }
+      detectHwZoom(stream);
+      setFacingMode(nextMode);
+    } catch {
+      // nextMode camera not available — restore the current one
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        await video.play();
+      }
+      detectHwZoom(stream);
+    }
+  }, [facingMode, detectHwZoom]);
+
+  const start = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        await video.play();
+      }
+      detectHwZoom(stream);
 
       const ws = new WebSocket(wsDetectUrl());
       wsRef.current = ws;
@@ -176,7 +250,7 @@ export default function App() {
         e instanceof Error ? e.message : "Camera permission denied"
       );
     }
-  }, [captureAndSend, mergeDetections, running]);
+  }, [captureAndSend, mergeDetections, running, facingMode, detectHwZoom]);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -189,12 +263,21 @@ export default function App() {
     );
   }, [selectedId, generating]);
 
+  // Clear everything only on explicit deselect (selectedId → null).
+  // Never clear on frame-driven ID changes — that causes flicker.
+  useEffect(() => {
+    if (!selectedId) {
+      lastSelectedRef.current = null;
+      setPreviewUrl(null);
+      setCardInfo(null);
+      setStatusMessage(null);
+    }
+  }, [selectedId]);
+
+  // Update the crop preview as the bounding box moves each frame
   useEffect(() => {
     const video = videoRef.current;
-    if (!selected || !video) {
-      setPreviewUrl(null);
-      return;
-    }
+    if (!selected || !video) return; // keep last preview when object leaves frame
     const url = captureFrameCrop(
       video,
       selected.box,
@@ -202,48 +285,39 @@ export default function App() {
       selected.sourceFrameHeight
     );
     setPreviewUrl(url);
-    setCardInfo(null);
-    setStatusMessage(null);
   }, [selected, sourceW, sourceH]);
 
-  const handleSelect = (det: Detection | null) => {
-    setSelectedId(det?.id ?? null);
-    selectedIdRef.current = det?.id ?? null;
-    selectedClassRef.current = det?.className ?? null;
-    setStatusMessage(null);
-    setCardInfo(null);
+  const registerCard = (card: CardInfo) => {
+    setCardInfo(card);
+    if (card.imageUrl) {
+      setAllCards((prev) =>
+        prev.some((c) => c.cardId === card.cardId) ? prev : [...prev, card]
+      );
+    }
   };
 
-  const handleGenerate = async () => {
-    if (!selected) return;
+  const generateCardForDetection = async (det: Detection) => {
     generatingRef.current = true;
     setGenerating(true);
     setStatusMessage("Generating card...");
     setDetections((prev) =>
       prev.map((d) =>
-        d.id === selected.id ? { ...d, generating: true, selected: true } : d
+        d.id === det.id ? { ...d, generating: true, selected: true } : d
       )
     );
-
     try {
       const { card, message } = await generateCard(
-        selected.id,
-        selected.className,
-        selected.confidence,
-        selected.box
+        det.id,
+        det.className,
+        det.confidence,
+        det.box
       );
-      setCardInfo(card);
+      registerCard(card);
       setStatusMessage(message);
       setDetections((prev) =>
         prev.map((d) =>
-          d.id === selected.id
-            ? {
-                ...d,
-                knownObject: true,
-                cardId: card.cardId,
-                generating: false,
-                selected: true,
-              }
+          d.id === det.id
+            ? { ...d, knownObject: true, cardId: card.cardId, generating: false, selected: true }
             : d
         )
       );
@@ -255,15 +329,45 @@ export default function App() {
     }
   };
 
-  const handleShowCard = async () => {
-    if (!selected?.cardId) return;
-    try {
-      const card = await getCard(selected.cardId);
-      setCardInfo(card);
-      setStatusMessage(`Card: ${card.name} (${card.className})`);
-    } catch {
-      setStatusMessage("Could not load card");
+  const handleSelect = async (det: Detection | null) => {
+    setSelectedId(det?.id ?? null);
+    selectedIdRef.current = det?.id ?? null;
+    setStatusMessage(null);
+
+    if (!det) {
+      selectedClassRef.current = null;
+      return;
     }
+
+    // Only reset card when the class changes; keep it while tracking the same object
+    const classChanged = det.className !== selectedClassRef.current;
+    selectedClassRef.current = det.className;
+    if (classChanged) setCardInfo(null);
+
+    if (det.knownObject && det.cardId) {
+      try {
+        const card = await getCard(det.cardId);
+        if (card.imageUrl) {
+          registerCard(card);
+          setStatusMessage(`Card: ${card.name} (${card.className})`);
+          return;
+        }
+      } catch (e) {
+        if (e instanceof CardNotFoundError) {
+          setDetections((prev) =>
+            prev.map((d) =>
+              d.id === det.id ? { ...d, knownObject: false, cardId: null } : d
+            )
+          );
+        }
+      }
+    }
+
+    // Same class already has a card loaded — no need to re-generate
+    if (!classChanged && cardInfo?.imageUrl) return;
+
+    // New object, missing image, or stale card — auto-generate
+    await generateCardForDetection(det);
   };
 
   const toggleClass = (name: string) => {
@@ -292,6 +396,11 @@ export default function App() {
             Stop
           </button>
         )}
+        {running && (
+          <button type="button" onClick={switchCamera}>
+            {facingMode === "environment" ? "Use Front Camera" : "Use Rear Camera"}
+          </button>
+        )}
         <label>
           Confidence:{" "}
           <input
@@ -305,6 +414,20 @@ export default function App() {
           />
           {confidence.toFixed(2)}
         </label>
+        {running && (
+          <label>
+            Zoom:{" "}
+            <input
+              type="range"
+              min={-10}
+              max={10}
+              step={1}
+              value={zoom}
+              onChange={(e) => applyZoom(Number(e.target.value))}
+            />
+            {zoom > 0 ? `+${zoom}` : zoom}
+          </label>
+        )}
         <span className="status">
           Status: {status}
           {processingMs != null && running && ` · ${processingMs}ms`}
@@ -327,6 +450,7 @@ export default function App() {
 
       <div className="layout">
         <div>
+          <div className="viewer-wrap">
           <Viewer
             videoRef={videoRef}
             detections={detections}
@@ -336,7 +460,9 @@ export default function App() {
             running={running}
             onSelect={handleSelect}
             onVideoReady={() => {}}
+            cssZoom={zoom > 0 && hwZoomCaps ? 1 : zoomScale}
           />
+          </div>
           {detections.length > 0 && (
             <ul className="detection-list">
               {detections.map((d) => (
@@ -350,15 +476,27 @@ export default function App() {
         </div>
 
         <SidePanel
-          selected={selected}
+          selected={displaySelected}
           previewUrl={previewUrl}
           cardInfo={cardInfo}
           statusMessage={statusMessage}
           generating={generating}
-          onGenerate={handleGenerate}
-          onShowCard={handleShowCard}
         />
       </div>
+
+      {allCards.length > 0 && (
+        <div className="card-strip">
+          {allCards.map((c) => (
+            <img
+              key={c.cardId}
+              className={`card-strip__item${cardInfo?.cardId === c.cardId ? " card-strip__item--active" : ""}`}
+              src={c.imageUrl!}
+              alt={c.name}
+              title={c.name}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

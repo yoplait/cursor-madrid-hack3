@@ -17,6 +17,7 @@ type Props = {
   onSelect: (det: Detection | null) => void;
   onVideoReady: (video: HTMLVideoElement) => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  cssZoom?: number;
 };
 
 export default function Viewer({
@@ -28,6 +29,7 @@ export default function Viewer({
   onSelect,
   onVideoReady,
   videoRef,
+  cssZoom = 1,
 }: Props) {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const captureRef = useRef<HTMLCanvasElement>(null);
@@ -94,7 +96,7 @@ export default function Viewer({
   }, [running]);
 
   return (
-    <div className="viewer">
+    <div className="viewer" style={cssZoom !== 1 ? { transform: `scale(${cssZoom})`, transformOrigin: "top center" } : undefined}>
       <video
         ref={videoRef as React.RefObject<HTMLVideoElement>}
         autoPlay

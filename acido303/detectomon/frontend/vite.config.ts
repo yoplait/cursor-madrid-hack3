@@ -8,9 +8,11 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    allowedHosts: [".ngrok-free.dev", ".ngrok.io"],
     proxy: {
       "/ws": { target: backendUrl, ws: true },
       "/api": { target: backendUrl },
+      "/static": { target: backendUrl },
     },
   },
 });

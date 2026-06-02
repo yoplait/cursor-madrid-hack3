@@ -1,11 +1,21 @@
 import json
+import logging
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
 
-from src.card_registry import CardRegistry
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("detectomon")
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from src.card_registry import CardRegistry, generate_card_image
 from src.config import get_settings
 from src.detector import DetectionEngine
 from src.image_utils import decode_jpeg_base64, resize_frame
@@ -20,7 +30,7 @@ from src.schemas import (
 )
 
 settings = get_settings()
-registry = CardRegistry()
+registry = CardRegistry.load()
 engine: DetectionEngine | None = None
 
 
@@ -41,6 +51,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_static_dir = Path(__file__).resolve().parent / "static"
+_static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
 def _enrich_detections(
@@ -74,13 +88,51 @@ def health():
 
 
 @app.post("/api/cards/generate", response_model=GenerateCardResponse)
-def generate_card(body: GenerateCardRequest):
+async def generate_card(body: GenerateCardRequest):
+    logger.info(
+        "Card generation requested: class=%s detection=%s confidence=%.2f",
+        body.className,
+        body.detectionId,
+        body.confidence,
+    )
+
     card, reused = registry.generate(
         body.detectionId,
         body.className,
         body.box.model_dump(),
     )
+
+    if reused:
+        logger.info("Reusing existing card: id=%s name=%s", card.card_id, card.name)
+    else:
+        logger.info("New card created: id=%s name=%s", card.card_id, card.name)
+
+    if not card.image_url:
+        logger.info(
+            "Generating image via %s (model=%s) for %s",
+            settings.openai_base_url or "api.openai.com",
+            settings.image_model,
+            card.name,
+        )
+        t0 = time.perf_counter()
+        card.image_url = await generate_card_image(
+            settings.openai_api_key,
+            card.class_name,
+            card.name,
+            base_url=settings.openai_base_url,
+            image_model=settings.image_model,
+        )
+        elapsed = int((time.perf_counter() - t0) * 1000)
+        if card.image_url:
+            logger.info("Image ready in %dms: %s", elapsed, card.image_url)
+            registry._save()
+        else:
+            logger.warning("Image generation failed after %dms — card saved without image", elapsed)
+    else:
+        logger.info("Image already cached: %s", card.image_url)
+
     message = "Existing card found" if reused else "New card generated"
+    logger.info("Card generation complete: id=%s message=%r", card.card_id, message)
     return GenerateCardResponse(
         card=CardOut(
             cardId=card.card_id,
@@ -88,6 +140,7 @@ def generate_card(body: GenerateCardRequest):
             className=card.class_name,
             detectionId=body.detectionId,
             reused=reused,
+            imageUrl=card.image_url,
         ),
         message=message,
     )
@@ -104,6 +157,7 @@ def get_card(card_id: str):
         className=card.class_name,
         detectionId=card.detection_id or "",
         reused=True,
+        imageUrl=card.image_url,
     )
 
 

@@ -1,0 +1,63 @@
+{
+  "counter": 7,
+  "cards": {
+    "card-1": {
+      "card_id": "card-1",
+      "name": "Personmon",
+      "class_name": "person",
+      "detection_id": "frame-13-det-1",
+      "image_url": "/static/cards/person.png"
+    },
+    "card-2": {
+      "card_id": "card-2",
+      "name": "Laptopmon",
+      "class_name": "laptop",
+      "detection_id": "frame-234-det-2",
+      "image_url": null
+    },
+    "card-3": {
+      "card_id": "card-3",
+      "name": "Bottlemon",
+      "class_name": "bottle",
+      "detection_id": "frame-8-det-1",
+      "image_url": "/static/cards/bottle.png"
+    },
+    "card-4": {
+      "card_id": "card-4",
+      "name": "Cupmon",
+      "class_name": "cup",
+      "detection_id": "frame-159-det-1",
+      "image_url": "/static/cards/cup.png"
+    },
+    "card-5": {
+      "card_id": "card-5",
+      "name": "Cellphonemon",
+      "class_name": "cell phone",
+      "detection_id": "frame-18-det-3",
+      "image_url": "/static/cards/cellphone.png"
+    },
+    "card-6": {
+      "card_id": "card-6",
+      "name": "Dogmon",
+      "class_name": "dog",
+      "detection_id": "frame-88-det-1",
+      "image_url": "/static/cards/dog.png"
+    },
+    "card-7": {
+      "card_id": "card-7",
+      "name": "Catmon",
+      "class_name": "cat",
+      "detection_id": "frame-1259-det-2",
+      "image_url": "/static/cards/cat.png"
+    }
+  },
+  "class_to_card": {
+    "person": "card-1",
+    "laptop": "card-2",
+    "bottle": "card-3",
+    "cup": "card-4",
+    "cell phone": "card-5",
+    "dog": "card-6",
+    "cat": "card-7"
+  }
+}

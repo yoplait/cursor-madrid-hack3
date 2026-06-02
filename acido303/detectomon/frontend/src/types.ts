@@ -39,4 +39,5 @@ export type CardInfo = {
   className: string;
   detectionId: string;
   reused: boolean;
+  imageUrl?: string | null;
 };

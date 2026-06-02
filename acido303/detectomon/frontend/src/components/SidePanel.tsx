@@ -6,8 +6,6 @@ type Props = {
   cardInfo: CardInfo | null;
   statusMessage: string | null;
   generating: boolean;
-  onGenerate: () => void;
-  onShowCard: () => void;
 };
 
 export default function SidePanel({
@@ -16,29 +14,45 @@ export default function SidePanel({
   cardInfo,
   statusMessage,
   generating,
-  onGenerate,
-  onShowCard,
 }: Props) {
   if (!selected) {
     return (
       <aside className="panel">
         <h2>Selected Object</h2>
-        <p className="status">Click a detection on the video to inspect it.</p>
+        <div className="card-slot card-slot--empty">
+          <span className="card-slot__hint">Click a detection to inspect it</span>
+        </div>
       </aside>
     );
   }
 
   const pct = Math.round(selected.confidence * 100);
-  const isKnown = selected.knownObject && selected.cardId;
   const status = generating
     ? "Generating card..."
-    : isKnown
+    : selected.knownObject && selected.cardId
       ? "Already discovered"
       : "New object";
 
   return (
     <aside className="panel">
       <h2>Selected Object</h2>
+
+      {/* Card slot — always visible at the top */}
+      {cardInfo?.imageUrl ? (
+        <img
+          className="card-slot card-slot--art"
+          src={cardInfo.imageUrl}
+          alt={`${cardInfo.name} card art`}
+        />
+      ) : (
+        <div className={`card-slot${generating ? " card-slot--generating" : " card-slot--empty"}`}>
+          {previewUrl && (
+            <img className="card-slot__preview" src={previewUrl} alt="Crop preview" />
+          )}
+          {generating && <span className="card-slot__hint">Generating image…</span>}
+        </div>
+      )}
+
       <div className="field">
         <strong>Class:</strong> {selected.className}
       </div>
@@ -53,25 +67,7 @@ export default function SidePanel({
           <strong>Card:</strong> {cardInfo.name}
         </div>
       )}
-      {previewUrl && (
-        <img className="preview" src={previewUrl} alt="Crop preview" />
-      )}
-      <div className="panel-actions">
-        {isKnown ? (
-          <button type="button" className="show" onClick={onShowCard}>
-            Show Card
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="generate"
-            onClick={onGenerate}
-            disabled={generating}
-          >
-            {generating ? "Generating..." : "Generate Card"}
-          </button>
-        )}
-      </div>
+
       {statusMessage && <div className="badge-msg">{statusMessage}</div>}
     </aside>
   );

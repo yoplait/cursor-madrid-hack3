@@ -107,14 +107,54 @@ header p {
   font-weight: 500;
 }
 
-.preview {
+.card-slot {
   width: 100%;
-  max-height: 180px;
-  object-fit: contain;
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
+  margin: 0 0 0.75rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.card-slot--empty {
+  border: 2px dashed #2a3848;
   background: #0f1419;
-  border-radius: 6px;
-  margin: 0.75rem 0;
-  border: 1px solid #2a3848;
+}
+
+.card-slot--generating {
+  border: 2px dashed #f5c842;
+  background: #0f1419;
+  animation: pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: #f5c842; }
+  50%       { border-color: #7a6421; }
+}
+
+.card-slot--art {
+  object-fit: cover;
+  border: 2px solid #f5c842;
+  box-shadow: 0 0 16px #f5c84250;
+}
+
+.card-slot__preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+}
+
+.card-slot__hint {
+  position: absolute;
+  font-size: 0.8rem;
+  color: #9aa8b8;
+  text-align: center;
+  padding: 0 1rem;
 }
 
 .panel-actions {
@@ -158,4 +198,37 @@ header p {
 
 .detection-list li {
   margin-bottom: 0.25rem;
+}
+
+.card-strip {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.75rem 0;
+  margin-top: 1rem;
+  border-top: 1px solid #2a3848;
+  scrollbar-width: thin;
+  scrollbar-color: #2a3848 transparent;
+}
+
+.card-strip__item {
+  height: 140px;
+  width: auto;
+  border-radius: 8px;
+  border: 2px solid #2a3848;
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: border-color 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+
+.card-strip__item:hover {
+  border-color: #9aa8b8;
+  transform: translateY(-3px);
+}
+
+.card-strip__item--active {
+  border-color: #f5c842;
+  box-shadow: 0 0 10px #f5c84260;
 }

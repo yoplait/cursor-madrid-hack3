@@ -6,4 +6,6 @@ pydantic
 numpy
 opencv-python
 libreyolo
+openai
+httpx
 pytest

@@ -1,7 +1,12 @@
+.viewer-wrap {
+  overflow: hidden;
+  width: 100%;
+  max-width: 960px;
+}
+
 .viewer {
   position: relative;
   width: 100%;
-  max-width: 960px;
 }
 
 .viewer video,

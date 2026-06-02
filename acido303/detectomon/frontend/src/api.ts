@@ -17,9 +17,12 @@ export async function generateCard(
   return res.json();
 }
 
+export class CardNotFoundError extends Error {}
+
 export async function getCard(cardId: string): Promise<CardInfo> {
   const res = await fetch(`${API_BASE}/api/cards/${cardId}`);
-  if (!res.ok) throw new Error("Card not found");
+  if (res.status === 404) throw new CardNotFoundError("Card not found");
+  if (!res.ok) throw new Error("Failed to fetch card");
   return res.json();
 }
 
@@ -27,7 +30,5 @@ export function wsDetectUrl(): string {
   const base = import.meta.env.VITE_WS_URL;
   if (base) return base;
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host =
-    import.meta.env.DEV ? "127.0.0.1:8000" : window.location.host;
-  return `${proto}//${host}/ws/detect`;
+  return `${proto}//${window.location.host}/ws/detect`;
 }

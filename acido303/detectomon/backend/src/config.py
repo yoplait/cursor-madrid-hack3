@@ -18,6 +18,9 @@ class Settings:
     mock_detection: bool
     host: str
     port: int
+    openai_api_key: str
+    openai_base_url: str | None
+    image_model: str
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -35,4 +38,7 @@ def get_settings() -> Settings:
         mock_detection=_env_bool("MOCK_DETECTION", False),
         host=os.getenv("BACKEND_HOST", "127.0.0.1"),
         port=int(os.getenv("BACKEND_PORT", "8000")),
+        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        openai_base_url=os.getenv("OPENAI_BASE_URL") or None,
+        image_model=os.getenv("IMAGE_MODEL", "dall-e-3"),
     )

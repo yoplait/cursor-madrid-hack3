@@ -45,6 +45,7 @@ class CardOut(BaseModel):
     className: str
     detectionId: str
     reused: bool = False
+    imageUrl: str | None = None
 
 
 class GenerateCardResponse(BaseModel):
