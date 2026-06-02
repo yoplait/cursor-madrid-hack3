@@ -15,11 +15,11 @@ class ObjectDetector:
             self._model = LibreYOLO(self.model_path)
         except ImportError as e:
             raise ImportError(
-                "libreyolo ist nicht installiert. Ausführen: pip install libreyolo"
+                "libreyolo n'est pas installé. Exécutez : pip install libreyolo"
             ) from e
         except Exception as e:
             raise RuntimeError(
-                "LibreYOLO-Modell konnte nicht geladen werden. Bitte einen gültigen Modellpfad mit --model angeben."
+                "Échec du chargement du modèle LibreYOLO. Veuillez fournir un chemin de modèle valide avec --model."
             ) from e
 
     def detect(self, frame) -> list[Detection]:
@@ -29,7 +29,7 @@ class ObjectDetector:
         try:
             results = self._model(frame, conf=self.confidence_threshold)
         except Exception as e:
-            print(f"[WARNUNG] Fehler bei der Erkennungs-Inferenz: {e}")
+            print(f"[AVERTISSEMENT] Erreur d'inférence de détection : {e}")
             return []
 
         detections: list[Detection] = []
@@ -56,7 +56,7 @@ class ObjectDetector:
                         )
                     )
                 except Exception as e:
-                    print(f"[WARNUNG] Ungültiger Erkennungsrahmen wird übersprungen: {e}")
+                    print(f"[AVERTISSEMENT] Boîte de détection mal formée ignorée : {e}")
                     continue
 
         return detections

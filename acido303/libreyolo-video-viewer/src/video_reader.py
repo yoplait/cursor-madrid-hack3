@@ -15,16 +15,16 @@ class VideoMetadata:
 
 def open_video(path: str) -> tuple[cv2.VideoCapture, VideoMetadata]:
     if not os.path.exists(path):
-        raise FileNotFoundError(f"Videodatei nicht gefunden: {path}")
+        raise FileNotFoundError(f"Fichier vidéo introuvable : {path}")
 
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
-        raise RuntimeError(f"Videodatei kann nicht geöffnet werden: {path}")
+        raise RuntimeError(f"Impossible d'ouvrir le fichier vidéo : {path}")
 
     fps = cap.get(cv2.CAP_PROP_FPS)
     if fps <= 0:
         cap.release()
-        raise RuntimeError(f"Ungültige FPS ({fps}) in Videodatei: {path}")
+        raise RuntimeError(f"IPS invalide ({fps}) dans le fichier vidéo : {path}")
 
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
