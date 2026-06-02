@@ -1,0 +1,23 @@
+.viewer {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+}
+
+.viewer video,
+.viewer canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.viewer canvas.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+}
+
+.viewer canvas.capture {
+  display: none;
+}
