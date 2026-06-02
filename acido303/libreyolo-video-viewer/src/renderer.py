@@ -61,7 +61,7 @@ class FrameRenderer:
         if timestamp is not None:
             self._put_outlined_text(out, timestamp, (10, 25), 0.7)
 
-        self._put_outlined_text(out, f"Detections: {len(detections)}", (10, 50), 0.5)
+        self._put_outlined_text(out, f"Détections : {len(detections)}", (10, 50), 0.5)
 
         return out
 
