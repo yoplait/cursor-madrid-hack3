@@ -19,62 +19,62 @@ from src.viewer import VideoViewer
 
 def parse_args() -> Config:
     parser = argparse.ArgumentParser(
-        description="Analyse a local MP4 with LibreYOLO object detection."
+        description="Lokale MP4 mit LibreYOLO-Objekterkennung analysieren."
     )
-    parser.add_argument("--video", required=True, help="Path to local MP4 file.")
+    parser.add_argument("--video", required=True, help="Pfad zur lokalen MP4-Datei.")
     parser.add_argument(
         "--model",
         default="./models/LibreYOLOXs.pt",
-        help="Path to LibreYOLO model file (default: ./models/LibreYOLOXs.pt).",
+        help="Pfad zur LibreYOLO-Modelldatei (Standard: ./models/LibreYOLOXs.pt).",
     )
-    parser.add_argument("--output-dir", default="./output", help="Output directory.")
-    parser.add_argument("--classes", nargs="*", default=[], help="Filter class names.")
+    parser.add_argument("--output-dir", default="./output", help="Ausgabeverzeichnis.")
+    parser.add_argument("--classes", nargs="*", default=[], help="Klassennamen filtern.")
     parser.add_argument(
-        "--confidence", type=float, default=0.45, help="Confidence threshold."
+        "--confidence", type=float, default=0.45, help="Vertrauensschwelle."
     )
     parser.add_argument(
         "--sample-rate",
         type=int,
         default=5,
-        help="Detection frequency in frames per second.",
+        help="Erkennungshäufigkeit in Frames pro Sekunde.",
     )
     parser.add_argument(
-        "--viewer", action="store_true", help="Show OpenCV viewer window."
+        "--viewer", action="store_true", help="OpenCV-Viewer-Fenster anzeigen."
     )
     parser.add_argument(
-        "--save-annotated-video", action="store_true", help="Save annotated MP4."
+        "--save-annotated-video", action="store_true", help="Annotiertes MP4 speichern."
     )
     parser.add_argument(
         "--save-snapshots",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Save snapshot images for detections.",
+        help="Snapshot-Bilder für Erkennungen speichern.",
     )
     parser.add_argument(
         "--annotate-snapshots",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Draw bounding boxes on snapshots.",
+        help="Begrenzungsrahmen auf Snapshots zeichnen.",
     )
     parser.add_argument(
         "--max-events",
         type=int,
         default=None,
-        help="Stop after N events (for testing).",
+        help="Nach N Ereignissen stoppen (für Tests).",
     )
     parser.add_argument(
         "--max-frames",
         type=int,
         default=None,
-        help="Stop after N processed frames (for testing).",
+        help="Nach N verarbeiteten Frames stoppen (für Tests).",
     )
 
     args = parser.parse_args()
 
     if not (0.0 < args.confidence <= 1.0):
-        parser.error("--confidence must be between 0 and 1.")
+        parser.error("--confidence muss zwischen 0 und 1 liegen.")
     if args.sample_rate < 1:
-        parser.error("--sample-rate must be >= 1.")
+        parser.error("--sample-rate muss >= 1 sein.")
 
     return Config(
         video_path=args.video,
@@ -99,21 +99,21 @@ def make_output_dirs(output_dir: str) -> tuple[str, str, str]:
         os.makedirs(snapshots_dir, exist_ok=True)
         os.makedirs(annotated_dir, exist_ok=True)
     except OSError as e:
-        print(f"[ERROR] Cannot create output directories: {e}", file=sys.stderr)
+        print(f"[FEHLER] Ausgabeverzeichnisse können nicht erstellt werden: {e}", file=sys.stderr)
         sys.exit(1)
     return output_dir, snapshots_dir, annotated_dir
 
 
 def print_header(cfg: Config, meta: VideoMetadata) -> None:
-    print(f"Analyzing video: {cfg.video_path}")
-    print(f"FPS: {meta.fps:.1f}")
-    print(f"Resolution: {meta.width}x{meta.height}")
-    print(f"Duration: {format_seconds(meta.duration_seconds)}")
-    print(f"Detection sample rate: {cfg.sample_rate} frames/sec")
-    print(f"Confidence threshold: {cfg.confidence}")
-    print(f"Classes: {', '.join(cfg.classes) if cfg.classes else 'all'}")
-    print(f"Viewer: {'enabled' if cfg.viewer else 'disabled'}")
-    print(f"Annotated video export: {'enabled' if cfg.save_annotated_video else 'disabled'}")
+    print(f"Video wird analysiert: {cfg.video_path}")
+    print(f"IPS : {meta.fps:.1f}")
+    print(f"Auflösung: {meta.width}x{meta.height}")
+    print(f"Dauer: {format_seconds(meta.duration_seconds)}")
+    print(f"Erkennungs-Abtastrate: {cfg.sample_rate} Frames/s")
+    print(f"Vertrauensschwelle: {cfg.confidence}")
+    print(f"Klassen: {', '.join(cfg.classes) if cfg.classes else 'alle'}")
+    print(f"Viewer: {'aktiviert' if cfg.viewer else 'deaktiviert'}")
+    print(f"Export annotiertes Video: {'aktiviert' if cfg.save_annotated_video else 'deaktiviert'}")
     print()
 
 
@@ -125,7 +125,7 @@ def build_video_writer(
     writer = cv2.VideoWriter(out_path, fourcc, meta.fps, (meta.width, meta.height))
     if not writer.isOpened():
         print(
-            "[WARNING] mp4v codec unavailable; trying avc1.",
+            "[WARNUNG] Codec mp4v nicht verfügbar; versuche avc1.",
             file=sys.stderr,
         )
         writer.release()
@@ -133,7 +133,7 @@ def build_video_writer(
         writer = cv2.VideoWriter(out_path, fourcc, meta.fps, (meta.width, meta.height))
         if not writer.isOpened():
             print(
-                "[ERROR] No suitable video codec found. Annotated video will not be saved.",
+                "[FEHLER] Kein geeigneter Video-Codec gefunden. Annotiertes Video wird nicht gespeichert.",
                 file=sys.stderr,
             )
             return None
@@ -146,7 +146,7 @@ def main() -> None:
     try:
         cap, meta = open_video(cfg.video_path)
     except (FileNotFoundError, RuntimeError) as e:
-        print(f"[ERROR] {e}", file=sys.stderr)
+        print(f"[FEHLER] {e}", file=sys.stderr)
         sys.exit(1)
 
     output_dir, snapshots_dir, annotated_dir = make_output_dirs(cfg.output_dir)
@@ -155,7 +155,7 @@ def main() -> None:
     try:
         detector = ObjectDetector(confidence_threshold=cfg.confidence, model_path=cfg.model_path)
     except (ImportError, RuntimeError) as e:
-        print(f"[ERROR] {e}", file=sys.stderr)
+        print(f"[FEHLER] {e}", file=sys.stderr)
         cap.release()
         sys.exit(1)
 
@@ -181,7 +181,7 @@ def main() -> None:
 
     def on_manual_snapshot(frame_data) -> None:
         path = snapshot_writer.save_manual(frame_data)
-        print(f"  [snapshot] saved manually: {path}")
+        print(f"  [Snapshot] manuell gespeichert: {path}")
 
     if viewer is not None:
         viewer.snapshot_callback = on_manual_snapshot
@@ -213,8 +213,8 @@ def main() -> None:
 
                     for ev in new_events:
                         print(
-                            f"[{ev.timestamp}] {ev.class_name} detected,"
-                            f" confidence {ev.confidence:.2f}"
+                            f"[{ev.timestamp}] {ev.class_name} détecté,"
+                            f" confiance {ev.confidence:.2f}"
                         )
 
                     if cfg.max_events is not None and len(all_events) >= cfg.max_events:
@@ -270,15 +270,15 @@ def main() -> None:
 
     summary = summarize_events(all_events)
     print()
-    print("Done.")
-    print(f"Total events: {len(all_events)}")
+    print("Fertig.")
+    print(f"Ereignisse gesamt: {len(all_events)}")
     if summary:
         for cls, count in summary.items():
             print(f"  {cls}: {count}")
-    print(f"Report saved to: {json_report_path}")
-    print(f"Snapshots saved to: {snapshots_dir}")
+    print(f"Bericht gespeichert unter: {json_report_path}")
+    print(f"Snapshots gespeichert unter: {snapshots_dir}")
     if cfg.save_annotated_video and video_writer is not None:
-        print(f"Annotated video saved to: {annotated_video_path}")
+        print(f"Annotiertes Video gespeichert unter: {annotated_video_path}")
 
 
 if __name__ == "__main__":

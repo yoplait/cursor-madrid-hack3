@@ -5,7 +5,7 @@ import numpy as np
 
 
 class VideoViewer:
-    WINDOW_NAME = "LibreYOLO Video Viewer"
+    WINDOW_NAME = "LibreYOLO Video-Viewer"
 
     def __init__(
         self,
@@ -23,7 +23,7 @@ class VideoViewer:
             cv2.namedWindow(self.WINDOW_NAME, cv2.WINDOW_NORMAL)
             self._initialized = True
         except Exception as e:
-            raise RuntimeError(f"Cannot open viewer window: {e}") from e
+            raise RuntimeError(f"Viewer-Fenster kann nicht geöffnet werden: {e}") from e
 
     def show(self, frame: np.ndarray) -> bool:
         """Display frame; returns False when the user requests quit."""
