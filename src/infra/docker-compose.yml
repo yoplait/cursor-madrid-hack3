@@ -1,0 +1,18 @@
+services:
+  backend:
+    build:
+      context: ../..
+      dockerfile: src/infra/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      LIBREYOLO_MODEL: LibreYOLO9t.pt
+    volumes:
+      - ../../vendor/libreyolo/weights:/app/vendor/libreyolo/weights:ro
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ../frontend:/usr/share/nginx/html:ro

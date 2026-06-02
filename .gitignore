@@ -2,3 +2,10 @@
 *.swp
 *~
 .gemini/
+
+.venv/
+vendor/libreyolo/
+weights/
+runs/
+__pycache__/
+*.pyc
