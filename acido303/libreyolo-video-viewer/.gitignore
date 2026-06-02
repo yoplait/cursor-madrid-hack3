@@ -16,6 +16,7 @@ env/
 
 # Models
 models/
+weights/
 
 # Output
 output/
