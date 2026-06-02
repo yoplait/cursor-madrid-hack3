@@ -1,0 +1,5 @@
+libreyolo
+opencv-python
+numpy
+pydantic
+pytest
