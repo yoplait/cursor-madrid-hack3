@@ -1,11 +1,19 @@
 # infra
 
-Infraestructura y entorno de ejecución.
+## Local (recomendado)
 
-Ideas:
+```bash
+make dev
+```
 
-- `Dockerfile` / `docker-compose.yml` para backend + frontend
-- Scripts de despliegue y variables de entorno
-- CI mínimo (lint, tests, smoke de LibreYOLO)
+## Docker (backend sin LibreYOLO embebido)
 
-Setup LibreYOLO del repo: `../../scripts/setup_libreyolo.sh`
+Requiere pesos montados en `vendor/libreyolo/weights/`:
+
+```bash
+docker compose -f src/infra/docker-compose.yml up --build
+```
+
+Frontend: http://localhost:8080 · API: http://localhost:8000
+
+**Nota:** la imagen Docker no incluye `pip install libreyolo`; para producción conviene extender el Dockerfile o montar un venv preparado.

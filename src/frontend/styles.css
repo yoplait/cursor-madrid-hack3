@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e8eaed;
+}
+
+main {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+button {
+  background: #6c8cff;
+  border: 0;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#preview img {
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+
+pre {
+  background: #1a1d24;
+  padding: 1rem;
+  border-radius: 12px;
+  overflow: auto;
+}

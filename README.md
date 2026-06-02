@@ -50,6 +50,7 @@ Ejecuta los ejemplos (los pesos se resuelven desde `vendor/libreyolo/`):
 ```bash
 make detect
 make segment
+make dev          # backend :8000 + frontend :8080
 ```
 
 También puedes importar desde cualquier script en la raíz del repo:

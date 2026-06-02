@@ -4,8 +4,9 @@ Capa de visión con [LibreYOLO](https://www.libreyolo.com/docs).
 
 Scripts de ejemplo:
 
-- `detect.py` — detección con YOLO9t
-- `segment.py` — segmentación con RF-DETR
+- `service.py` — capa reutilizable (`detect`, `result_to_dict`)
+- `detect.py` — smoke test detección
+- `segment.py` — segmentación RF-DETR
 
 ```bash
 # desde la raíz del repo

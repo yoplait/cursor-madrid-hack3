@@ -1,9 +1,18 @@
 # backend
 
-Servicios y API del proyecto.
+API FastAPI que expone inferencia LibreYOLO.
 
-Ideas:
+## Endpoints
 
-- Endpoints REST/WebSocket para subir vídeo o frames
-- Orquestación entre `frontend/` y `model/`
-- Persistencia de resultados y metadatos de detección
+- `GET /health` — ping
+- `GET /model` — pesos cargados
+- `POST /detect` — sube imagen (`multipart/form-data`, campo `file`)
+
+## Dev
+
+```bash
+source ../../.venv/bin/activate
+make backend    # desde la raíz del repo
+```
+
+Docs interactivas: http://127.0.0.1:8000/docs

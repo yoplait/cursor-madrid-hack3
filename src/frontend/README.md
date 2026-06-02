@@ -1,9 +1,14 @@
 # frontend
 
-Interfaz de usuario del proyecto.
+UI estática para probar la API de detección.
 
-Ideas para el hackathon:
+```bash
+make frontend   # http://127.0.0.1:8080
+make backend    # API en :8000
+```
 
-- Visor de vídeo con detecciones en tiempo real (ver `acido303/libreyolo-video-viewer` en el [repo del evento](https://github.com/yoplait/cursor-madrid-hack3))
-- Dashboard con timeline de objetos detectados
-- Cliente que consuma la API del `backend/`
+O ambos a la vez:
+
+```bash
+make dev
+```
